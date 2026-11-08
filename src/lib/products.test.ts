@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canPurchaseProduct, products } from "@/lib/products";
+import { canPurchaseProduct, getProductAmountInNaira, products } from "@/lib/products";
 
 describe("marketplace products", () => {
   it("lists the six requested products at their specified prices", () => {
@@ -22,5 +22,16 @@ describe("marketplace products", () => {
   it("only allows checkout when a product is not sold", () => {
     expect(canPurchaseProduct(true)).toBe(false);
     expect(canPurchaseProduct(false)).toBe(true);
+  });
+
+  it("converts each listed price into the exact checkout amount in naira", () => {
+    expect(products.map((product) => getProductAmountInNaira(product.price))).toEqual([
+      200000,
+      180000,
+      150000,
+      250000,
+      180000,
+      100000,
+    ]);
   });
 });
