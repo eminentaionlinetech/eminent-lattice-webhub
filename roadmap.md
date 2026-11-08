@@ -1,3 +1,4 @@
-- [x] Replace sample cards with the six specified products and add/test sold-state rendering and checkout-button availability.
-- [x] Connect available listings to a secure Korapay checkout session flow using the user's securely stored API key.
-- [ ] Complete a live Korapay payment confirmation and delivery/access workflow; no payment webhook or customer delivery process was requested or configured.
+- [x] Populate the marketplace with the six specified products, prices, categories, features, and available status.
+- [x] Add sold-state presentation and disable purchase actions for sold products.
+- [x] Connect available-product buttons to Korapay checkout sessions using the securely saved key.
+- [ ] Complete Korapay payment confirmation and instant admin-credential delivery; waiting for the seller's product access/credential-delivery setup, which has not been provided.
