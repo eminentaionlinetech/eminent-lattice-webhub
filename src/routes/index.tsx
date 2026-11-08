@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Hexagon, Layers3, ShieldCheck, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-
-const products = ["01", "02", "03"];
+import { canPurchaseProduct, products, type MarketplaceProduct } from "@/lib/products";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -111,7 +111,7 @@ function Index() {
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">A growing collection of ready-to-own digital assets for businesses in Nigeria.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => <ProductCard key={product} number={product} />)}
+            {products.map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
         </div>
       </section>
@@ -147,10 +147,13 @@ function Index() {
   );
 }
 
-function ProductCard({ number }: { number: string }) {
+function ProductCard({ product }: { product: MarketplaceProduct }) {
+  const [checkoutNotice, setCheckoutNotice] = useState(false);
+  const isAvailable = canPurchaseProduct(product.isSold);
+
   return (
-    <article className="flex min-w-0 flex-col border border-border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5">
-      <div className="product-preview relative flex aspect-[1.58] items-center justify-center overflow-hidden border border-border/70 bg-secondary">
+    <article className={`relative flex min-w-0 flex-col border border-border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5 ${product.isSold ? "opacity-75" : ""}`}>
+      <div className={`product-preview relative flex aspect-[1.58] items-center justify-center overflow-hidden border border-border/70 bg-secondary ${product.isSold ? "grayscale" : ""}`}>
         <div className="preview-window w-[75%] border border-border bg-background">
           <div className="flex h-6 items-center gap-1.5 border-b border-border/70 px-2.5">
             <span className="size-1.5 rounded-full bg-muted-foreground/50" /><span className="size-1.5 rounded-full bg-muted-foreground/30" /><span className="size-1.5 rounded-full bg-muted-foreground/20" />
@@ -161,28 +164,41 @@ function ProductCard({ number }: { number: string }) {
             <div className="aspect-[1.2] border border-dashed border-border bg-secondary/70" />
           </div>
         </div>
-        <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {number}</span>
+        <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {product.id.slice(0, 2).toUpperCase()}</span>
+        {product.isSold && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
       </div>
       <div className="flex flex-1 flex-col pt-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Digital asset / {number}</p>
-            <h3 className="mt-2 font-display text-xl font-semibold">Website model {number}</h3>
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Digital asset / {product.id}</p>
+            <h3 className="mt-2 font-display text-xl font-semibold">{product.title}</h3>
           </div>
-          <span className="shrink-0 border border-border px-2 py-1 text-[10px] text-muted-foreground">Category TBD</span>
+          <span className="shrink-0 border border-border px-2 py-1 text-[10px] text-muted-foreground">{product.category}</span>
         </div>
         <ul className="mt-5 space-y-2.5 border-t border-border/70 pt-4 text-sm text-muted-foreground">
-          {["Feature slot 01", "Feature slot 02", "Feature slot 03"].map((feature) => (
+          {product.features.map((feature) => (
             <li key={feature} className="flex items-center gap-2.5"><Check size={14} className="shrink-0 text-primary" aria-hidden="true" />{feature}</li>
           ))}
         </ul>
         <div className="mt-6 flex items-end justify-between gap-3 border-t border-border/70 pt-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Price</p>
-            <p className="mt-1 font-display text-2xl font-semibold">₦—</p>
+            <p className="mt-1 font-display text-2xl font-semibold">{product.price}</p>
           </div>
-          <Button variant="outline" disabled className="h-9 rounded-sm border-border px-3 text-xs">Coming soon</Button>
+          <Button
+            variant={isAvailable ? "default" : "outline"}
+            disabled={!isAvailable}
+            onClick={() => setCheckoutNotice(true)}
+            className="h-9 rounded-sm border-border px-3 text-xs"
+          >
+            {isAvailable ? "Buy now" : "Sold"}
+          </Button>
         </div>
+        {checkoutNotice && isAvailable && (
+          <p role="status" className="mt-3 border-t border-border/70 pt-3 text-xs leading-5 text-muted-foreground">
+            Korapay checkout is not connected yet. Please check back soon.
+          </p>
+        )}
       </div>
     </article>
   );

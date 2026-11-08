@@ -84,6 +84,6 @@ export const products: MarketplaceProduct[] = [
   },
 ];
 
-export function getProductPurchaseState(isSold: boolean) {
-  return isSold ? "sold" : "available";
+export function canPurchaseProduct(isSold: boolean) {
+  return !isSold;
 }
