@@ -87,3 +87,11 @@ export const products: MarketplaceProduct[] = [
 export function canPurchaseProduct(isSold: boolean) {
   return !isSold;
 }
+
+export function getProductAmountInNaira(price: string) {
+  const amount = Number(price.replace(/[^0-9]/g, ""));
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    throw new Error("Invalid product price");
+  }
+  return amount;
+}
