@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestUrl } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { canPurchaseProduct, getProductAmountInNaira, products } from "@/lib/products";
@@ -25,8 +24,6 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
     }
 
     const reference = `EL-${crypto.randomUUID()}`;
-    const siteUrl = getRequestUrl();
-
     try {
       const response = await fetch("https://api.korapay.com/merchant/api/v1/charges/initialize", {
         method: "POST",
@@ -49,7 +46,11 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
         data?: { checkout_url?: unknown };
       } | null;
 
-      if (!response.ok || payload?.status !== true || typeof payload.data?.checkout_url !== "string") {
+      if (
+        !response.ok ||
+        (payload?.status !== true && payload?.status !== "true") ||
+        typeof payload.data?.checkout_url !== "string"
+      ) {
         console.error(`Korapay checkout initialization failed with status ${response.status}.`);
         return { ok: false as const, message: "Korapay could not start checkout. Please try again." };
       }

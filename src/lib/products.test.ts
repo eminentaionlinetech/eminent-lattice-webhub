@@ -18,6 +18,17 @@ describe("marketplace products", () => {
     ]);
   });
 
+  it("keeps each product’s category and feature list as requested", () => {
+    expect(products.map(({ category, features }) => [category, features])).toEqual([
+      ["Fashion & Retail", ["Lookbook gallery", "Size/color variant selectors", "Instagram feed integration", "Korapay ready"]],
+      ["Fitness & Gym", ["Booking schedule calendar", "Product store", "Weight/transformation tracker UI", "Video tutorial hub"]],
+      ["General E-Commerce", ["Quick checkout buttons", "WhatsApp ordering fallback chat", "Inventory count banners"]],
+      ["Professional Services", ["High-converting quote request forms", "Live WhatsApp support floating button", "Client testimonials layout"]],
+      ["Restaurant & Catering", ["Interactive digital menu", "Delivery fee calculator by location", "Instant order notifications"]],
+      ["Content & Media", ["Google AdSense monetization layout", "Newsletter subscription form", "Fast loading speed"]],
+    ]);
+  });
+
   it("marks all six listings available by default", () => {
     expect(products).toHaveLength(6);
     expect(products.every((product) => product.isSold === false)).toBe(true);

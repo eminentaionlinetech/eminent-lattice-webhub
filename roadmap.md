@@ -1,2 +1,3 @@
 - [x] Replace sample cards with the six specified products and add/test sold-state rendering and checkout-button availability.
-- [ ] Connect real Korapay checkout for available listings; waiting for the user's choice to use secure Korapay API-key setup after connector setup was declined.
+- [x] Connect available listings to a secure Korapay checkout session flow using the user's securely stored API key.
+- [ ] Complete a live Korapay payment confirmation and delivery/access workflow; no payment webhook or customer delivery process was requested or configured.
