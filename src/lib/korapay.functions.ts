@@ -5,7 +5,7 @@ import { z } from "zod";
 import { canPurchaseProduct, getProductAmountInNaira, products } from "@/lib/products";
 
 export const createKorapayCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         productId: z.string().min(1).max(80),
