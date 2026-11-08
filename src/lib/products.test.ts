@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canPurchaseProduct, getProductAmountInNaira, products } from "@/lib/products";
+import {
+  canPurchaseProduct,
+  getProductAmountInNaira,
+  products,
+} from "@/lib/products";
 
 describe("marketplace products", () => {
   it("lists the six requested products at their specified prices", () => {
@@ -33,5 +37,10 @@ describe("marketplace products", () => {
       180000,
       100000,
     ]);
+  });
+
+  it("rejects invalid or non-positive checkout amounts", () => {
+    expect(() => getProductAmountInNaira("₦0")).toThrow("Invalid product price");
+    expect(() => getProductAmountInNaira("₦not a price")).toThrow("Invalid product price");
   });
 });
