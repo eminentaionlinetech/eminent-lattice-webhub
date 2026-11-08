@@ -30,3 +30,5 @@ use the editor.
 <!-- LOVABLE:END -->
 
 Keep the initial marketplace experience on the root route; navigation destinations are in-page sections because the catalog is presented as one page.
+
+Create Korapay payment sessions only in a validated TanStack server function; the secret key must never enter browser code, and checkout URLs must be HTTPS on Korapay's checkout host.

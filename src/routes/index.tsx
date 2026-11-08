@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useState, type FormEvent } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Hexagon, Layers3, ShieldCheck, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { createKorapayCheckout } from "@/lib/korapay.functions";
 import { canPurchaseProduct, products, type MarketplaceProduct } from "@/lib/products";
 
 export const Route = createFileRoute("/")({
@@ -148,8 +152,31 @@ function Index() {
 }
 
 function ProductCard({ product }: { product: MarketplaceProduct }) {
-  const [checkoutNotice, setCheckoutNotice] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createCheckout = useServerFn(createKorapayCheckout);
   const isAvailable = canPurchaseProduct(product.isSold);
+
+  async function handleCheckout(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCheckoutError("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await createCheckout({ data: { productId: product.id, email } });
+      if (!result.ok) {
+        setCheckoutError(result.message);
+        return;
+      }
+      window.location.assign(result.checkoutUrl);
+    } catch {
+      setCheckoutError("We could not start checkout. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <article className={`relative flex min-w-0 flex-col border border-border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5 ${product.isSold ? "opacity-75" : ""}`}>
@@ -188,18 +215,44 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
           <Button
             variant={isAvailable ? "default" : "outline"}
             disabled={!isAvailable}
-            onClick={() => setCheckoutNotice(true)}
+            onClick={() => setCheckoutOpen(true)}
             className="h-9 rounded-sm border-border px-3 text-xs"
           >
             {isAvailable ? "Buy now" : "Sold"}
           </Button>
         </div>
-        {checkoutNotice && isAvailable && (
-          <p role="status" className="mt-3 border-t border-border/70 pt-3 text-xs leading-5 text-muted-foreground">
-            Korapay checkout is not connected yet. Please check back soon.
-          </p>
-        )}
       </div>
+      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Continue to secure payment</DialogTitle>
+            <DialogDescription>
+              Enter your email to pay {product.price} for {product.title} through Korapay.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCheckout} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor={`email-${product.id}`} className="text-sm font-medium">Email address</label>
+              <Input
+                id={`email-${product.id}`}
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            {checkoutError && <p role="alert" className="text-sm text-destructive">{checkoutError}</p>}
+            <DialogFooter>
+              <Button type="submit" disabled={isSubmitting || !isAvailable} className="rounded-sm">
+                {isSubmitting ? "Connecting…" : "Continue to Korapay"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }
