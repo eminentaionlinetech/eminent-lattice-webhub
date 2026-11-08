@@ -1,0 +1,2 @@
+- [ ] Replace sample cards with the six specified products and add/test sold-state rendering and checkout-button availability.
+- [ ] Finish Korapay checkout setup after the provider connection approval was declined; waiting for a user-approved connection/credential path.
