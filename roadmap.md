@@ -1,2 +1,2 @@
-- [ ] Replace sample cards with the six specified products and add/test sold-state rendering and checkout-button availability.
-- [ ] Finish Korapay checkout setup after the provider connection approval was declined; waiting for a user-approved connection/credential path.
+- [x] Replace sample cards with the six specified products and add/test sold-state rendering and checkout-button availability.
+- [ ] Connect real Korapay checkout for available listings; waiting for the user's choice to use secure Korapay API-key setup after connector setup was declined.
