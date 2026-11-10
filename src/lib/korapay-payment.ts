@@ -1,10 +1,10 @@
 export type KorapayPaymentMethod = "card" | "bank_transfer" | "pay_with_bank";
 
 export type KorapayChargeSnapshot = {
-  reference: unknown;
-  amount: unknown;
-  currency: unknown;
-  status: unknown;
+  reference?: unknown;
+  amount?: unknown;
+  currency?: unknown;
+  status?: unknown;
 };
 
 export function matchesKorapayOrder(
