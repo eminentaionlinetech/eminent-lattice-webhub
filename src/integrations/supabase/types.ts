@@ -95,6 +95,13 @@ export type Database = {
             foreignKeyName: "marketplace_orders_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "marketplace_catalog"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "marketplace_inventory"
             referencedColumns: ["product_id"]
           },
@@ -102,10 +109,49 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      marketplace_catalog: {
+        Row: {
+          amount_ngn: number | null
+          category: string | null
+          features: Json | null
+          is_reserved: boolean | null
+          is_sold: boolean | null
+          price: string | null
+          product_id: string | null
+          title: string | null
+        }
+        Insert: {
+          amount_ngn?: number | null
+          category?: string | null
+          features?: Json | null
+          is_reserved?: never
+          is_sold?: boolean | null
+          price?: string | null
+          product_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          amount_ngn?: number | null
+          category?: string | null
+          features?: Json | null
+          is_reserved?: never
+          is_sold?: boolean | null
+          price?: string | null
+          product_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      finalize_marketplace_payment: {
+        Args: {
+          _amount_ngn: number
+          _provider_status: string
+          _reference: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
