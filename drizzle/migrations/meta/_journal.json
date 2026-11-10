@@ -8,6 +8,13 @@
       "when": 1794285377330,
       "tag": "0000_korapay_payment_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794285628390,
+      "tag": "0001_add_order_claim_tokens",
+      "breakpoints": true
     }
   ]
 }

@@ -59,6 +59,7 @@ export type Database = {
       marketplace_orders: {
         Row: {
           amount_ngn: number
+          claim_token_hash: string | null
           created_at: string
           customer_email: string
           paid_at: string | null
@@ -69,6 +70,7 @@ export type Database = {
         }
         Insert: {
           amount_ngn: number
+          claim_token_hash?: string | null
           created_at?: string
           customer_email: string
           paid_at?: string | null
@@ -79,6 +81,7 @@ export type Database = {
         }
         Update: {
           amount_ngn?: number
+          claim_token_hash?: string | null
           created_at?: string
           customer_email?: string
           paid_at?: string | null

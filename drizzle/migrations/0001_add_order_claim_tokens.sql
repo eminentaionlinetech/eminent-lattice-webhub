@@ -1,0 +1,1 @@
+ALTER TABLE public.marketplace_orders ADD COLUMN claim_token_hash text;
