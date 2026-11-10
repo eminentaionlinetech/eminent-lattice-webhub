@@ -144,6 +144,10 @@ export type Database = {
       }
     }
     Functions: {
+      consume_marketplace_credential_claim: {
+        Args: { _claim_token_hash: string; _reference: string }
+        Returns: boolean
+      }
       finalize_marketplace_payment: {
         Args: {
           _amount_ngn: number

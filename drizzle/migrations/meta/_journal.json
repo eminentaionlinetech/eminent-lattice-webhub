@@ -36,6 +36,13 @@
       "when": 1794286018227,
       "tag": "0004_atomic_marketplace_order_reservations",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794286119513,
+      "tag": "0005_protect_marketplace_order_details",
+      "breakpoints": true
     }
   ]
 }
