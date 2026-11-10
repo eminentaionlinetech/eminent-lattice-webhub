@@ -1,4 +1,10 @@
 - [x] Populate the marketplace with the six specified products, prices, categories, features, and available status.
 - [x] Add sold-state presentation and disable purchase actions for sold products.
 - [x] Connect available-product buttons to Korapay checkout sessions using the securely saved key.
-- [ ] Complete Korapay payment confirmation and instant admin-credential delivery; waiting for the seller's product access/credential-delivery setup, which has not been provided.
+- [x] Connect Lovable Cloud and create persistent listing and payment-order storage.
+- [x] Collect unique per-site admin URLs, usernames, and passwords through secure secret entry.
+- [ ] Build Korapay-hosted checkout with card, bank transfer, and pay-with-bank choices.
+- [ ] Verify payment server-side before marking a listing sold or revealing credentials.
+- [ ] Update sold listings across viewers and deliver each site's credentials once after confirmed payment.
+- [ ] Show free cloud hosting and instant custom-domain linking (.com, .ng, .com.ng) in purchase details.
+- [ ] Run payment, fulfillment, inventory, and responsive preview checks; report any live-payment limitation.
