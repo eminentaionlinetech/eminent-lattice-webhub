@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
+
+import { isFinalKorapayStatus, matchesKorapayOrder, type KorapayPaymentMethod } from "@/lib/korapay-payment";
 
 const checkoutInput = z.object({
   productId: z.string().min(1).max(80),
@@ -129,11 +132,10 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
     }
 
     try {
-      const currentOrigin = process.env["SUPABASE_URL"];
-      const publicOrigin = process.env["VITE_SUPABASE_URL"];
-      const appOrigin = process.env["APP_URL"] ?? process.env["PUBLIC_APP_URL"];
-      const origin = appOrigin ?? publicOrigin ?? currentOrigin;
-      if (!origin) throw new Error("Marketplace origin is missing.");
+      const appRequest = getRequest();
+      const returnUrl = new URL("/", appRequest.url);
+      returnUrl.searchParams.set("payment_reference", reference);
+      const webhookUrl = new URL("/api/public/korapay/webhook", appRequest.url);
 
       const response = await fetch("https://api.korapay.com/merchant/api/v1/charges/initialize", {
         method: "POST",
@@ -147,6 +149,8 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
           reference,
           narration: `Purchase: ${reservation.data.title}`,
           customer: { email: data.email },
+          redirect_url: returnUrl.toString(),
+          notification_url: webhookUrl.toString(),
           channels: [data.paymentMethod],
           default_channel: data.paymentMethod,
         }),
@@ -223,12 +227,12 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
         }
 
         const payment = payload.data;
-        if (!payment || payment.reference !== data.reference || payment.amount !== order.amount_ngn || payment.currency !== "NGN") {
+        if (!payment || !matchesKorapayOrder(payment, { reference: data.reference, amount: order.amount_ngn })) {
           console.error("Korapay returned a transaction that did not match its order.");
           return { ok: false as const, message: "Payment details could not be matched to this order." };
         }
 
-        if (payment.status !== "success" && payment.status !== "failed") {
+        if (!isFinalKorapayStatus(payment.status)) {
           return { ok: false as const, message: "Your payment is still being confirmed. Please check again shortly." };
         }
 
@@ -252,15 +256,6 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
         console.error("Korapay transaction verification could not be completed.");
         return { ok: false as const, message: "Your payment is still being confirmed. Please check again shortly." };
       }
-    }
-
-    const { data: claimed, error: claimError } = await supabaseAdmin.rpc("consume_marketplace_credential_claim", {
-      _reference: data.reference,
-      _claim_token_hash: order.claim_token_hash,
-    });
-
-    if (claimError || !claimed) {
-      return { ok: false as const, message: "These credentials have already been retrieved. Keep them safe." };
     }
 
     const secretNames = korapaySecretNameByProduct[order.product_id as keyof typeof korapaySecretNameByProduct];
@@ -287,6 +282,15 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
     } catch {
       console.error("Credential delivery is not configured with a valid admin address.");
       return { ok: false as const, message: "Your purchase is confirmed; contact the marketplace owner for access." };
+    }
+
+    const { data: claimed, error: claimError } = await supabaseAdmin.rpc("consume_marketplace_credential_claim", {
+      _reference: data.reference,
+      _claim_token_hash: order.claim_token_hash,
+    });
+
+    if (claimError || !claimed) {
+      return { ok: false as const, message: "These credentials have already been retrieved. Keep them safe." };
     }
 
     return {
