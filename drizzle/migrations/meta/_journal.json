@@ -50,6 +50,13 @@
       "when": 1794286495981,
       "tag": "0006_grant_service_catalog_access",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794286610291,
+      "tag": "0007_secure_marketplace_catalog_view",
+      "breakpoints": true
     }
   ]
 }
