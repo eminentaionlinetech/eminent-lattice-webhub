@@ -152,6 +152,20 @@ export type Database = {
         }
         Returns: string
       }
+      release_marketplace_order: {
+        Args: { _reference: string }
+        Returns: boolean
+      }
+      reserve_marketplace_order: {
+        Args: {
+          _claim_token_hash: string
+          _customer_email: string
+          _payment_method: string
+          _product_id: string
+          _reference: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
