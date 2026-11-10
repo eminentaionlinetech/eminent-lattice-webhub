@@ -14,7 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      marketplace_inventory: {
+        Row: {
+          amount_ngn: number
+          category: string
+          features: Json
+          is_sold: boolean
+          price: string
+          product_id: string
+          reserved_order_reference: string | null
+          reserved_until: string | null
+          sold_at: string | null
+          sold_order_reference: string | null
+          title: string
+        }
+        Insert: {
+          amount_ngn: number
+          category: string
+          features?: Json
+          is_sold?: boolean
+          price: string
+          product_id: string
+          reserved_order_reference?: string | null
+          reserved_until?: string | null
+          sold_at?: string | null
+          sold_order_reference?: string | null
+          title: string
+        }
+        Update: {
+          amount_ngn?: number
+          category?: string
+          features?: Json
+          is_sold?: boolean
+          price?: string
+          product_id?: string
+          reserved_order_reference?: string | null
+          reserved_until?: string | null
+          sold_at?: string | null
+          sold_order_reference?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      marketplace_orders: {
+        Row: {
+          amount_ngn: number
+          created_at: string
+          customer_email: string
+          paid_at: string | null
+          payment_method: string
+          product_id: string
+          reference: string
+          status: string
+        }
+        Insert: {
+          amount_ngn: number
+          created_at?: string
+          customer_email: string
+          paid_at?: string | null
+          payment_method: string
+          product_id: string
+          reference: string
+          status?: string
+        }
+        Update: {
+          amount_ngn?: number
+          created_at?: string
+          customer_email?: string
+          paid_at?: string | null
+          payment_method?: string
+          product_id?: string
+          reference?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_inventory"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
