@@ -43,6 +43,13 @@
       "when": 1794286119513,
       "tag": "0005_protect_marketplace_order_details",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794286495981,
+      "tag": "0006_grant_service_catalog_access",
+      "breakpoints": true
     }
   ]
 }
