@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import { isFinalKorapayStatus, matchesKorapayOrder, type KorapayPaymentMethod } from "@/lib/korapay-payment";
+import { isFinalKorapayStatus, matchesKorapayOrder } from "@/lib/korapay-payment";
 
 const checkoutInput = z.object({
   productId: z.string().min(1).max(80),
