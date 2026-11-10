@@ -78,9 +78,6 @@ function Index() {
   const queryClient = useQueryClient();
   const verifyPayment = useServerFn(verifyKorapayPayment);
   const verificationStarted = useRef(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentBusy, setPaymentBusy] = useState(false);
-  const [paymentError, setPaymentError] = useState("");
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [credentials, setCredentials] = useState<DeliveredCredentials | null>(null);
   const [verificationMessage, setVerificationMessage] = useState("");
@@ -222,7 +219,7 @@ function Index() {
           {catalog.error && <p role="status" className="mb-5 text-sm text-destructive">{catalog.error}</p>}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} onCheckoutComplete={() => setPaymentOpen(false)} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
@@ -292,21 +289,6 @@ function Index() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={paymentOpen} onOpenChange={(open) => {
-        setPaymentOpen(open);
-        if (!open) setPaymentError("");
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Secure Korapay checkout</DialogTitle>
-            <DialogDescription>Choose a payment method. You’ll finish payment on Korapay’s secure checkout.</DialogDescription>
-          </DialogHeader>
-          {paymentError && <p role="alert" className="text-sm text-destructive">{paymentError}</p>}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }
@@ -337,10 +319,8 @@ function CredentialRow({
 
 function ProductCard({
   product,
-  onCheckoutComplete,
 }: {
   product: MarketplaceProduct & { isReserved: boolean };
-  onCheckoutComplete: () => void;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -363,7 +343,6 @@ function ProductCard({
       }
 
       window.sessionStorage.setItem(`marketplace-claim:${result.reference}`, result.claimToken);
-      onCheckoutComplete();
       window.location.assign(result.checkoutUrl);
     } catch {
       setCheckoutError("We could not start checkout. Please try again.");

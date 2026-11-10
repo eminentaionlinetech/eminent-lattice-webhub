@@ -3,8 +3,8 @@
 - [x] Connect available-product buttons to Korapay checkout sessions using the securely saved key.
 - [x] Connect Lovable Cloud and create persistent listing and payment-order storage.
 - [x] Collect unique per-site admin URLs, usernames, and passwords through secure secret entry.
-- [ ] Build Korapay-hosted checkout with card, bank transfer, and pay-with-bank choices.
-- [ ] Verify payment server-side before marking a listing sold or revealing credentials.
-- [ ] Update sold listings across viewers and deliver each site's credentials once after confirmed payment.
-- [ ] Show free cloud hosting and instant custom-domain linking (.com, .ng, .com.ng) in purchase details.
-- [ ] Run payment, fulfillment, inventory, and responsive preview checks; report any live-payment limitation.
+- [x] Build Korapay-hosted checkout with card, bank transfer, and pay-with-bank choices; USSD support is not claimed because Korapay's published channel list does not confirm it.
+- [x] Verify Korapay payment server-side against the exact order reference, NGN amount, currency, and final status before claiming a listing or releasing credentials.
+- [x] Update sold listings across viewers and deliver each site's credentials once after confirmed payment.
+- [x] Show free cloud hosting and instant custom-domain linking (.com, .ng, .com.ng) in purchase details.
+- [x] Run payment-rule tests and desktop checkout-preview checks; a real charge was not initiated.
