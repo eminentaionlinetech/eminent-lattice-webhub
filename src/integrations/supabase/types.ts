@@ -14,13 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      marketplace_inventory: {
+        Row: {
+          amount_ngn: number
+          category: string
+          features: Json
+          is_sold: boolean
+          price: string
+          product_id: string
+          reserved_order_reference: string | null
+          reserved_until: string | null
+          sold_at: string | null
+          sold_order_reference: string | null
+          title: string
+        }
+        Insert: {
+          amount_ngn: number
+          category: string
+          features?: Json
+          is_sold?: boolean
+          price: string
+          product_id: string
+          reserved_order_reference?: string | null
+          reserved_until?: string | null
+          sold_at?: string | null
+          sold_order_reference?: string | null
+          title: string
+        }
+        Update: {
+          amount_ngn?: number
+          category?: string
+          features?: Json
+          is_sold?: boolean
+          price?: string
+          product_id?: string
+          reserved_order_reference?: string | null
+          reserved_until?: string | null
+          sold_at?: string | null
+          sold_order_reference?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      marketplace_orders: {
+        Row: {
+          amount_ngn: number
+          claim_token_hash: string | null
+          created_at: string
+          customer_email: string
+          paid_at: string | null
+          payment_method: string
+          product_id: string
+          reference: string
+          status: string
+        }
+        Insert: {
+          amount_ngn: number
+          claim_token_hash?: string | null
+          created_at?: string
+          customer_email: string
+          paid_at?: string | null
+          payment_method: string
+          product_id: string
+          reference: string
+          status?: string
+        }
+        Update: {
+          amount_ngn?: number
+          claim_token_hash?: string | null
+          created_at?: string
+          customer_email?: string
+          paid_at?: string | null
+          payment_method?: string
+          product_id?: string
+          reference?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_catalog"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_inventory"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      marketplace_catalog: {
+        Row: {
+          amount_ngn: number | null
+          category: string | null
+          features: Json | null
+          is_reserved: boolean | null
+          is_sold: boolean | null
+          price: string | null
+          product_id: string | null
+          title: string | null
+        }
+        Insert: {
+          amount_ngn?: number | null
+          category?: string | null
+          features?: Json | null
+          is_reserved?: never
+          is_sold?: boolean | null
+          price?: string | null
+          product_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          amount_ngn?: number | null
+          category?: string | null
+          features?: Json | null
+          is_reserved?: never
+          is_sold?: boolean | null
+          price?: string | null
+          product_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      consume_marketplace_credential_claim: {
+        Args: { _claim_token_hash: string; _reference: string }
+        Returns: boolean
+      }
+      finalize_marketplace_payment: {
+        Args: {
+          _amount_ngn: number
+          _provider_status: string
+          _reference: string
+        }
+        Returns: string
+      }
+      release_marketplace_order: {
+        Args: { _reference: string }
+        Returns: boolean
+      }
+      reserve_marketplace_order: {
+        Args: {
+          _claim_token_hash: string
+          _customer_email: string
+          _payment_method: string
+          _product_id: string
+          _reference: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

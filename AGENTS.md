@@ -32,3 +32,5 @@ use the editor.
 Keep the initial marketplace experience on the root route; navigation destinations are in-page sections because the catalog is presented as one page.
 
 Create Korapay payment sessions only in a validated TanStack server function; the secret key must never enter browser code, and checkout URLs must be HTTPS on Korapay's checkout host.
+
+Persist payment and inventory state in Lovable Cloud; only server-verified payments may claim a listing or release its per-site credentials, never browser redirects or unverified callbacks.
