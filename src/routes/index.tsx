@@ -1,15 +1,57 @@
+import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type FormEvent } from "react";
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, Hexagon, Layers3, ShieldCheck, Zap } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  Copy,
+  Hexagon,
+  Layers3,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { createKorapayCheckout } from "@/lib/korapay.functions";
-import { canPurchaseProduct, products, type MarketplaceProduct } from "@/lib/products";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  createKorapayCheckout,
+  getMarketplaceCatalog,
+  verifyKorapayPayment,
+} from "@/lib/korapay.functions";
+import type { KorapayPaymentMethod } from "@/lib/korapay-payment";
+import type { MarketplaceProduct } from "@/lib/products";
+
+const marketplaceQueryOptions = queryOptions({
+  queryKey: ["marketplace-catalog"],
+  queryFn: () => getMarketplaceCatalog(),
+  staleTime: 5_000,
+  refetchInterval: 15_000,
+  refetchIntervalInBackground: true,
+});
+
+type DeliveredCredentials = {
+  adminUrl: string;
+  username: string;
+  password: string;
+  hosting: string;
+  domains: string;
+};
 
 export const Route = createFileRoute("/")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(marketplaceQueryOptions),
   head: () => ({
     meta: [
       { title: "Eminent Lattice Web-Hub | Digital Marketplace" },
@@ -31,6 +73,67 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { data: catalog } = useSuspenseQuery(marketplaceQueryOptions);
+  const products = catalog.products;
+  const queryClient = useQueryClient();
+  const verifyPayment = useServerFn(verifyKorapayPayment);
+  const verificationStarted = useRef(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [credentials, setCredentials] = useState<DeliveredCredentials | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [copiedField, setCopiedField] = useState("");
+
+  useEffect(() => {
+    if (verificationStarted.current) return;
+
+    const url = new URL(window.location.href);
+    const reference = url.searchParams.get("payment_reference");
+    if (!reference) return;
+
+    const tokenKey = `marketplace-claim:${reference}`;
+    const claimToken = window.sessionStorage.getItem(tokenKey);
+    url.searchParams.delete("payment_reference");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+
+    if (!claimToken) {
+      setVerificationMessage("We couldn’t find this checkout session. Please contact the marketplace owner for help.");
+      setCredentialsOpen(true);
+      return;
+    }
+
+    verificationStarted.current = true;
+    void verifyPayment({ data: { reference, claimToken } })
+      .then(async (result) => {
+        if (!result.ok) {
+          setVerificationMessage(result.message);
+          setCredentialsOpen(true);
+          return;
+        }
+
+        window.sessionStorage.removeItem(tokenKey);
+        setCredentials(result.credentials);
+        setCredentialsOpen(true);
+        await queryClient.invalidateQueries({ queryKey: ["marketplace-catalog"] });
+      })
+      .catch(() => {
+        setVerificationMessage("Your payment is still being confirmed. Please check again shortly.");
+        setCredentialsOpen(true);
+      });
+  }, [queryClient, verifyPayment]);
+
+  async function copyCredential(value: string, field: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      window.setTimeout(() => setCopiedField(""), 1800);
+    } catch {
+      setCopiedField("");
+    }
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       <header className="border-b border-border/70">
@@ -39,7 +142,9 @@ function Index() {
             <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
               <Hexagon size={20} strokeWidth={1.7} aria-hidden="true" />
             </span>
-            <span className="truncate font-display text-sm font-semibold sm:text-base">Eminent Lattice <span className="text-muted-foreground">Web-Hub</span></span>
+            <span className="truncate font-display text-sm font-semibold sm:text-base">
+              Eminent Lattice <span className="text-muted-foreground">Web-Hub</span>
+            </span>
           </a>
           <nav aria-label="Main navigation" className="flex items-center gap-4 text-sm text-muted-foreground sm:gap-8">
             <a className="transition-colors hover:text-foreground" href="#explore">Explore</a>
@@ -114,8 +219,11 @@ function Index() {
             </div>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">A growing collection of ready-to-own digital assets for businesses in Nigeria.</p>
           </div>
+          {catalog.error && <p role="status" className="mb-5 text-sm text-destructive">{catalog.error}</p>}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => <ProductCard key={product.id} product={product} />)}
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} onCheckoutComplete={() => setPaymentOpen(false)} />
+            ))}
           </div>
         </div>
       </section>
@@ -131,7 +239,13 @@ function Index() {
               <span className="font-mono text-xs text-primary">0{index + 1}</span>
               <div>
                 <h3 className="text-sm font-semibold">{step}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Details will be available as listings are added.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {index === 0
+                    ? "Pick a ready-to-own website for your business."
+                    : index === 1
+                      ? "Complete your payment on Korapay’s secure checkout."
+                      : "Receive the website’s admin access after your payment is confirmed."}
+                </p>
               </div>
             </div>
           ))}
@@ -147,17 +261,94 @@ function Index() {
           <a href="#top" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">Back to top <ArrowUpRight size={14} aria-hidden="true" /></a>
         </div>
       </footer>
+
+      <Dialog open={credentialsOpen} onOpenChange={setCredentialsOpen}>
+        <DialogContent>
+          {credentials ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Thank you for your purchase!</DialogTitle>
+                <DialogDescription>Here are your admin credentials. Please log in immediately, change the admin email to your own, and update the password.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <CredentialRow label="Admin Login URL" value={credentials.adminUrl} copied={copiedField === "url"} onCopy={() => copyCredential(credentials.adminUrl, "url")} />
+                <CredentialRow label="Username" value={credentials.username} copied={copiedField === "username"} onCopy={() => copyCredential(credentials.username, "username")} />
+                <CredentialRow label="Temporary Password" value={credentials.password} copied={copiedField === "password"} onCopy={() => copyCredential(credentials.password, "password")} />
+              </div>
+              <div className="border-t border-border pt-4 text-sm text-muted-foreground">
+                <p>{credentials.hosting}</p>
+                <p className="mt-2">{credentials.domains}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Payment confirmation</DialogTitle>
+                <DialogDescription>{verificationMessage || "Checking your payment securely with Korapay…"}</DialogDescription>
+              </DialogHeader>
+              {!verificationMessage && <p role="status" className="text-sm text-muted-foreground">This may take a few moments. Keep this page open.</p>}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={paymentOpen} onOpenChange={(open) => {
+        setPaymentOpen(open);
+        if (!open) setPaymentError("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Secure Korapay checkout</DialogTitle>
+            <DialogDescription>Choose a payment method. You’ll finish payment on Korapay’s secure checkout.</DialogDescription>
+          </DialogHeader>
+          {paymentError && <p role="alert" className="text-sm text-destructive">{paymentError}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
 
-function ProductCard({ product }: { product: MarketplaceProduct }) {
+function CredentialRow({
+  label,
+  value,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3 border border-border p-3">
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="break-all text-sm font-medium">{value}</p>
+      </div>
+      <Button type="button" variant="outline" size="icon" title={`Copy ${label}`} aria-label={`Copy ${label}`} onClick={onCopy}>
+        {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+      </Button>
+    </div>
+  );
+}
+
+function ProductCard({
+  product,
+  onCheckoutComplete,
+}: {
+  product: MarketplaceProduct & { isReserved: boolean };
+  onCheckoutComplete: () => void;
+}) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<KorapayPaymentMethod>("card");
   const [checkoutError, setCheckoutError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createCheckout = useServerFn(createKorapayCheckout);
-  const isAvailable = canPurchaseProduct(product.isSold);
+  const isAvailable = !product.isSold && !product.isReserved;
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,11 +356,14 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
     setIsSubmitting(true);
 
     try {
-      const result = await createCheckout({ data: { productId: product.id, email } });
+      const result = await createCheckout({ data: { productId: product.id, email, paymentMethod } });
       if (!result.ok) {
         setCheckoutError(result.message);
         return;
       }
+
+      window.sessionStorage.setItem(`marketplace-claim:${result.reference}`, result.claimToken);
+      onCheckoutComplete();
       window.location.assign(result.checkoutUrl);
     } catch {
       setCheckoutError("We could not start checkout. Please try again.");
@@ -193,6 +387,7 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
         </div>
         <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {product.id.slice(0, 2).toUpperCase()}</span>
         {product.isSold && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
+        {!product.isSold && product.isReserved && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-border bg-secondary px-4 py-2 font-mono text-sm font-semibold text-muted-foreground">CHECKOUT IN PROGRESS</span></span>}
       </div>
       <div className="flex flex-1 flex-col pt-5">
         <div className="flex items-start justify-between gap-3">
@@ -207,6 +402,10 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
             <li key={feature} className="flex items-center gap-2.5"><Check size={14} className="shrink-0 text-primary" aria-hidden="true" />{feature}</li>
           ))}
         </ul>
+        <div className="mt-6 border-t border-border/70 pt-4 text-xs leading-5 text-muted-foreground">
+          <p>Free, fully functional cloud hosting included.</p>
+          <p>Link your own .com, .ng, or .com.ng domain at takeover.</p>
+        </div>
         <div className="mt-6 flex items-end justify-between gap-3 border-t border-border/70 pt-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Price</p>
@@ -215,24 +414,27 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
           <Button
             variant={isAvailable ? "default" : "outline"}
             disabled={!isAvailable}
-            onClick={() => setCheckoutOpen(true)}
+            onClick={() => {
+              setCheckoutError("");
+              setCheckoutOpen(true);
+            }}
             className="h-9 rounded-sm border-border px-3 text-xs"
           >
-            {isAvailable ? "Buy now" : "Sold"}
+            {product.isSold ? "Sold" : product.isReserved ? "Reserved" : "Buy now"}
           </Button>
         </div>
       </div>
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Continue to secure payment</DialogTitle>
+            <DialogTitle>Secure Korapay checkout</DialogTitle>
             <DialogDescription>
-              Enter your email to pay {product.price} for {product.title} through Korapay.
+              Pay {product.price} for {product.title}. Free cloud hosting is included; link your own domain when you take ownership.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCheckout} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor={`email-${product.id}`} className="text-sm font-medium">Email address</label>
+              <Label htmlFor={`email-${product.id}`}>Email address</Label>
               <Input
                 id={`email-${product.id}`}
                 type="email"
@@ -244,6 +446,14 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium">Payment method</legend>
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as KorapayPaymentMethod)} className="gap-2">
+                <PaymentMethodOption value="card" label="Card" />
+                <PaymentMethodOption value="bank_transfer" label="Bank transfer" />
+                <PaymentMethodOption value="pay_with_bank" label="Pay with bank" />
+              </RadioGroup>
+            </fieldset>
             {checkoutError && <p role="alert" className="text-sm text-destructive">{checkoutError}</p>}
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting || !isAvailable} className="rounded-sm">
@@ -254,5 +464,15 @@ function ProductCard({ product }: { product: MarketplaceProduct }) {
         </DialogContent>
       </Dialog>
     </article>
+  );
+}
+
+function PaymentMethodOption({ value, label }: { value: KorapayPaymentMethod; label: string }) {
+  const id = `payment-${value}`;
+  return (
+    <Label htmlFor={id} className="flex cursor-pointer items-center gap-3 border border-border px-3 py-3 text-sm font-normal">
+      <RadioGroupItem id={id} value={value} />
+      <span>{label}</span>
+    </Label>
   );
 }
