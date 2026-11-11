@@ -420,7 +420,7 @@ function ProductCard({
         </div>
         <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {product.id.slice(0, 2).toUpperCase()}</span>
         {getProductPreviewUrl(product.id) && (
-          <Button asChild size="sm" variant="secondary" className="absolute bottom-2 left-3 h-8 rounded-sm px-2.5 text-[11px]">
+          <Button asChild size="sm" variant="secondary" className="absolute bottom-2 left-3 z-10 h-8 rounded-sm px-2.5 text-[11px]">
             <a
               href={getProductPreviewUrl(product.id) ?? undefined}
               target="_blank"
@@ -431,7 +431,7 @@ function ProductCard({
             </a>
           </Button>
         )}
-        {product.isSold && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
+        {product.isSold && <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
         {!product.isSold && product.isReserved && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-border bg-secondary px-4 py-2 font-mono text-sm font-semibold text-muted-foreground">CHECKOUT IN PROGRESS</span></span>}
       </div>
       <div className="flex flex-1 flex-col pt-5">
