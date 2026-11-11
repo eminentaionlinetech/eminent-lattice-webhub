@@ -33,7 +33,7 @@ describe("buyer website source packages", () => {
         "script.js",
         "styles.css",
       ]);
-      expect(html, product.title).toContain(product.title);
+      expect(html, product.title).toContain(product.title.replaceAll("&", "&amp;"));
       expect(readme, product.title).toContain("Korapay integration guide");
       expect(javascript, product.title).toContain("addEventListener");
     }
