@@ -296,6 +296,7 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
     return {
       ok: true as const,
       credentials: {
+        productId: order.product_id,
         adminUrl,
         username,
         password,
