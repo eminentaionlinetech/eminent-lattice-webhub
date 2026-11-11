@@ -7,6 +7,19 @@ export type MarketplaceProduct = {
   isSold: boolean;
 };
 
+const productPreviewUrls: Record<string, string> = {
+  "lattice-elite-fashion": "https://vercel.app",
+  "aerofit-wellness": "https://vercel.app",
+  "omnivendor-smart-store": "https://vercel.app",
+  "apex-corporate-hub": "https://vercel.app",
+  "bitespeed-food-bakery": "https://vercel.app",
+  "lattice-chronicle-media": "https://vercel.app",
+};
+
+export function getProductPreviewUrl(productId: string) {
+  return productPreviewUrls[productId] ?? null;
+}
+
 export const products: MarketplaceProduct[] = [
   {
     id: "lattice-elite-fashion",

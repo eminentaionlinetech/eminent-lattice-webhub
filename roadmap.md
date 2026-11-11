@@ -8,3 +8,6 @@
 - [x] Update sold listings across viewers and deliver each site's credentials once after confirmed payment.
 - [x] Show free cloud hosting and instant custom-domain linking (.com, .ng, .com.ng) in purchase details.
 - [x] Run payment-rule tests and desktop checkout-preview checks; a real charge was not initiated.
+- [x] Link each listing’s Live Preview button to the requested URL, opening in a new tab.
+- [x] Generate a per-listing source-code ZIP after verified purchase, including Korapay setup guidance without secret credentials.
+- [x] Confirm all six new-tab preview links and validate a real buyer source ZIP download in the live preview.

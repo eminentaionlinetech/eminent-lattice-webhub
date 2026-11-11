@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canPurchaseProduct,
+  getProductPreviewUrl,
   getProductAmountInNaira,
   products,
 } from "@/lib/products";
@@ -32,6 +33,13 @@ describe("marketplace products", () => {
   it("marks all six listings available by default", () => {
     expect(products).toHaveLength(6);
     expect(products.every((product) => product.isSold === false)).toBe(true);
+  });
+
+  it("links every website to its requested live preview in a new-tab-safe URL", () => {
+    expect(products.map(({ id }) => getProductPreviewUrl(id))).toEqual(
+      Array.from({ length: 6 }, () => "https://vercel.app"),
+    );
+    expect(getProductPreviewUrl("unknown-product")).toBeNull();
   });
 
   it("only allows checkout when a product is not sold", () => {

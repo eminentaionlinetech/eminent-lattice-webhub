@@ -8,6 +8,8 @@ import {
   ArrowUpRight,
   Check,
   Copy,
+  Download,
+  ExternalLink,
   Hexagon,
   Layers3,
   ShieldCheck,
@@ -33,6 +35,7 @@ import {
 } from "@/lib/korapay.functions";
 import type { KorapayPaymentMethod } from "@/lib/korapay-payment";
 import type { MarketplaceProduct } from "@/lib/products";
+import { getProductPreviewUrl } from "@/lib/products";
 
 const marketplaceQueryOptions = queryOptions({
   queryKey: ["marketplace-catalog"],
@@ -43,6 +46,7 @@ const marketplaceQueryOptions = queryOptions({
 });
 
 type DeliveredCredentials = {
+  productId: string;
   adminUrl: string;
   username: string;
   password: string;
@@ -80,6 +84,8 @@ function Index() {
   const verificationStarted = useRef(false);
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [credentials, setCredentials] = useState<DeliveredCredentials | null>(null);
+  const [sourceZip, setSourceZip] = useState<{ url: string; filename: string } | null>(null);
+  const [sourceZipStatus, setSourceZipStatus] = useState<"idle" | "preparing" | "ready" | "failed">("idle");
   const [verificationMessage, setVerificationMessage] = useState("");
   const [copiedField, setCopiedField] = useState("");
 
@@ -120,6 +126,37 @@ function Index() {
         setCredentialsOpen(true);
       });
   }, [queryClient, verifyPayment]);
+
+  useEffect(() => {
+    if (!credentials) {
+      setSourceZip(null);
+      setSourceZipStatus("idle");
+      return;
+    }
+
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setSourceZip(null);
+    setSourceZipStatus("preparing");
+
+    void import("@/lib/source-package")
+      .then(({ buildProductSourceArchive }) => buildProductSourceArchive(credentials.productId))
+      .then((archive) => {
+        if (cancelled) return;
+        const blob = new Blob([archive], { type: "application/zip" });
+        objectUrl = URL.createObjectURL(blob);
+        setSourceZip({ url: objectUrl, filename: `${credentials.productId}-source-code.zip` });
+        setSourceZipStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setSourceZipStatus("failed");
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [credentials]);
 
   async function copyCredential(value: string, field: string) {
     try {
@@ -272,6 +309,23 @@ function Index() {
                 <CredentialRow label="Username" value={credentials.username} copied={copiedField === "username"} onCopy={() => copyCredential(credentials.username, "username")} />
                 <CredentialRow label="Temporary Password" value={credentials.password} copied={copiedField === "password"} onCopy={() => copyCredential(credentials.password, "password")} />
               </div>
+              <div className="border-t border-border pt-4">
+                {sourceZipStatus === "ready" && sourceZip ? (
+                  <Button asChild className="w-full rounded-sm">
+                    <a href={sourceZip.url} download={sourceZip.filename}>
+                      <Download aria-hidden="true" /> Download Source Code (.zip)
+                    </a>
+                  </Button>
+                ) : (
+                  <Button type="button" className="w-full rounded-sm" disabled>
+                    <Download aria-hidden="true" />
+                    {sourceZipStatus === "failed" ? "Source ZIP unavailable" : "Preparing source ZIP…"}
+                  </Button>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Includes the website starter files and Korapay setup guide.
+                </p>
+              </div>
               <div className="border-t border-border pt-4 text-sm text-muted-foreground">
                 <p>{credentials.hosting}</p>
                 <p className="mt-2">{credentials.domains}</p>
@@ -365,7 +419,19 @@ function ProductCard({
           </div>
         </div>
         <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {product.id.slice(0, 2).toUpperCase()}</span>
-        {product.isSold && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
+        {getProductPreviewUrl(product.id) && (
+          <Button asChild size="sm" variant="secondary" className="absolute bottom-2 left-3 z-10 h-8 rounded-sm px-2.5 text-[11px]">
+            <a
+              href={getProductPreviewUrl(product.id) ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Live Preview: ${product.title} (opens in a new tab)`}
+            >
+              <ExternalLink aria-hidden="true" /> Live Preview
+            </a>
+          </Button>
+        )}
+        {product.isSold && <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
         {!product.isSold && product.isReserved && <span className="absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-border bg-secondary px-4 py-2 font-mono text-sm font-semibold text-muted-foreground">CHECKOUT IN PROGRESS</span></span>}
       </div>
       <div className="flex flex-1 flex-col pt-5">
