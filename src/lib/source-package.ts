@@ -247,8 +247,8 @@ Starter website package for **${site.category}**. It contains the requested HTML
 ## Run locally
 
 1. Extract the ZIP archive into a folder.
-2. Open `index.html` in a modern browser, or serve this folder with your preferred static web host.
-3. Edit the page text and product details in `index.html`. Adjust the visual theme in `styles.css`.
+2. Open index.html in a modern browser, or serve this folder with your preferred static web host.
+3. Edit the page text and product details in index.html. Adjust the visual theme in styles.css.
 
 ## Included starter sections
 
@@ -273,10 +273,10 @@ The sample contact form is not a checkout form. Add the server endpoints, databa
 
 ## Included files
 
-- `index.html` — semantic, responsive page content
-- `styles.css` — mobile-friendly visual theme
-- `script.js` — contact-form demonstration behavior
-- `README.md` — setup and payment-integration guidance
+- index.html — semantic, responsive page content
+- styles.css — mobile-friendly visual theme
+- script.js — contact-form demonstration behavior
+- README.md — setup and payment-integration guidance
 `;
 }
 
