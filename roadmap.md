@@ -11,3 +11,5 @@
 - [x] Link each listing’s Live Preview button to the requested URL, opening in a new tab.
 - [x] Generate a per-listing source-code ZIP after verified purchase, including Korapay setup guidance without secret credentials.
 - [x] Confirm all six new-tab preview links and validate a real buyer source ZIP download in the live preview.
+- [ ] Replace external preview links with six in-app interactive demo routes and checkout handoff.
+- [ ] Replace marketplace wireframes with real demo imagery and verify routes, interactions, and paid-delivery gating.
