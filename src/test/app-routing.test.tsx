@@ -14,4 +14,14 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("matches all six dedicated website demo paths", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const paths = ["fashion", "fitness", "omnivendor", "corporate", "food", "media"];
+
+    for (const slug of paths) {
+      const matches = router.matchRoutes(`/preview/${slug}`);
+      expect(matches.at(-1)?.routeId).toBe("/preview/$slug");
+    }
+  });
 });

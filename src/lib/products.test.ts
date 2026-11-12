@@ -35,9 +35,16 @@ describe("marketplace products", () => {
     expect(products.every((product) => product.isSold === false)).toBe(true);
   });
 
-  it("links every website to its requested live preview in a new-tab-safe URL", () => {
+  it("links every website to its dedicated in-app demo route", () => {
     expect(products.map(({ id }) => getProductPreviewUrl(id))).toEqual(
-      Array.from({ length: 6 }, () => "https://vercel.app"),
+      [
+        "/preview/fashion",
+        "/preview/fitness",
+        "/preview/omnivendor",
+        "/preview/corporate",
+        "/preview/food",
+        "/preview/media",
+      ],
     );
     expect(getProductPreviewUrl("unknown-product")).toBeNull();
   });

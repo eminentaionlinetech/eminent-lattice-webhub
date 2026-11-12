@@ -8,12 +8,12 @@ export type MarketplaceProduct = {
 };
 
 const productPreviewUrls: Record<string, string> = {
-  "lattice-elite-fashion": "https://vercel.app",
-  "aerofit-wellness": "https://vercel.app",
-  "omnivendor-smart-store": "https://vercel.app",
-  "apex-corporate-hub": "https://vercel.app",
-  "bitespeed-food-bakery": "https://vercel.app",
-  "lattice-chronicle-media": "https://vercel.app",
+  "lattice-elite-fashion": "/preview/fashion",
+  "aerofit-wellness": "/preview/fitness",
+  "omnivendor-smart-store": "/preview/omnivendor",
+  "apex-corporate-hub": "/preview/corporate",
+  "bitespeed-food-bakery": "/preview/food",
+  "lattice-chronicle-media": "/preview/media",
 };
 
 export function getProductPreviewUrl(productId: string) {

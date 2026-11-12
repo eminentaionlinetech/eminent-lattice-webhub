@@ -8,8 +8,7 @@
 - [x] Update sold listings across viewers and deliver each site's credentials once after confirmed payment.
 - [x] Show free cloud hosting and instant custom-domain linking (.com, .ng, .com.ng) in purchase details.
 - [x] Run payment-rule tests and desktop checkout-preview checks; a real charge was not initiated.
-- [x] Link each listing’s Live Preview button to the requested URL, opening in a new tab.
+- [x] Replace the initial external listing previews with dedicated interactive in-app demo routes.
 - [x] Generate a per-listing source-code ZIP after verified purchase, including Korapay setup guidance without secret credentials.
-- [x] Confirm all six new-tab preview links and validate a real buyer source ZIP download in the live preview.
-- [ ] Replace external preview links with six in-app interactive demo routes and checkout handoff.
-- [ ] Replace marketplace wireframes with real demo imagery and verify routes, interactions, and paid-delivery gating.
+- [x] Confirm the paid source ZIP download, demo interactions, mobile layout, and checkout handoff; no real charge was initiated.
+- [x] Replace marketplace wireframes with real demo imagery and add route and listing tests.

@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PreviewSlugRouteImport } from './routes/preview.$slug'
 import { Route as ApiPublicKorapayWebhookRouteImport } from './routes/api/public/korapay/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreviewSlugRoute = PreviewSlugRouteImport.update({
+  id: '/preview/$slug',
+  path: '/preview/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicKorapayWebhookRoute = ApiPublicKorapayWebhookRouteImport.update({
@@ -25,27 +31,31 @@ const ApiPublicKorapayWebhookRoute = ApiPublicKorapayWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/preview/$slug': typeof PreviewSlugRoute
   '/api/public/korapay/webhook': typeof ApiPublicKorapayWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/preview/$slug': typeof PreviewSlugRoute
   '/api/public/korapay/webhook': typeof ApiPublicKorapayWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/preview/$slug': typeof PreviewSlugRoute
   '/api/public/korapay/webhook': typeof ApiPublicKorapayWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/korapay/webhook'
+  fullPaths: '/' | '/preview/$slug' | '/api/public/korapay/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/korapay/webhook'
-  id: '__root__' | '/' | '/api/public/korapay/webhook'
+  to: '/' | '/preview/$slug' | '/api/public/korapay/webhook'
+  id: '__root__' | '/' | '/preview/$slug' | '/api/public/korapay/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PreviewSlugRoute: typeof PreviewSlugRoute
   ApiPublicKorapayWebhookRoute: typeof ApiPublicKorapayWebhookRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preview/$slug': {
+      id: '/preview/$slug'
+      path: '/preview/$slug'
+      fullPath: '/preview/$slug'
+      preLoaderRoute: typeof PreviewSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/korapay/webhook': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PreviewSlugRoute: PreviewSlugRoute,
   ApiPublicKorapayWebhookRoute: ApiPublicKorapayWebhookRoute,
 }
 export const routeTree = rootRouteImport

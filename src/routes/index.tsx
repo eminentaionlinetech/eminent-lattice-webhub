@@ -1,5 +1,5 @@
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -36,6 +36,7 @@ import {
 import type { KorapayPaymentMethod } from "@/lib/korapay-payment";
 import type { MarketplaceProduct } from "@/lib/products";
 import { getProductPreviewUrl } from "@/lib/products";
+import { getPreviewSiteByProductId } from "@/lib/preview-sites";
 
 const marketplaceQueryOptions = queryOptions({
   queryKey: ["marketplace-catalog"],
@@ -88,7 +89,16 @@ function Index() {
   const [sourceZipStatus, setSourceZipStatus] = useState<"idle" | "preparing" | "ready" | "failed">("idle");
   const [verificationMessage, setVerificationMessage] = useState("");
   const [copiedField, setCopiedField] = useState("");
+  const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const productId = url.searchParams.get("checkout");
+    if (!productId) return;
+    setCheckoutProductId(productId);
+    url.searchParams.delete("checkout");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
   useEffect(() => {
     if (verificationStarted.current) return;
 
@@ -256,7 +266,7 @@ function Index() {
           {catalog.error && <p role="status" className="mb-5 text-sm text-destructive">{catalog.error}</p>}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} openForCheckout={checkoutProductId === product.id} />
             ))}
           </div>
         </div>
@@ -373,8 +383,10 @@ function CredentialRow({
 
 function ProductCard({
   product,
+  openForCheckout,
 }: {
   product: MarketplaceProduct & { isReserved: boolean };
+  openForCheckout: boolean;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -383,6 +395,10 @@ function ProductCard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createCheckout = useServerFn(createKorapayCheckout);
   const isAvailable = !product.isSold && !product.isReserved;
+
+  useEffect(() => {
+    if (openForCheckout && isAvailable) setCheckoutOpen(true);
+  }, [isAvailable, openForCheckout]);
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -408,27 +424,25 @@ function ProductCard({
   return (
     <article className={`relative flex min-w-0 flex-col border border-border bg-card p-4 transition-colors hover:border-primary/40 sm:p-5 ${product.isSold ? "opacity-75" : ""}`}>
       <div className={`product-preview relative flex aspect-[1.58] items-center justify-center overflow-hidden border border-border/70 bg-secondary ${product.isSold ? "grayscale" : ""}`}>
-        <div className="preview-window w-[75%] border border-border bg-background">
-          <div className="flex h-6 items-center gap-1.5 border-b border-border/70 px-2.5">
-            <span className="size-1.5 rounded-full bg-muted-foreground/50" /><span className="size-1.5 rounded-full bg-muted-foreground/30" /><span className="size-1.5 rounded-full bg-muted-foreground/20" />
-            <span className="ml-2 h-1 w-1/3 bg-muted/80" />
-          </div>
-          <div className="grid grid-cols-[1fr_0.7fr] gap-3 p-3 sm:p-4">
-            <div className="space-y-2 py-1"><div className="h-1.5 w-3/4 bg-muted-foreground/20" /><div className="h-1.5 w-1/2 bg-muted-foreground/10" /><div className="mt-3 h-4 w-1/3 bg-primary/20" /></div>
-            <div className="aspect-[1.2] border border-dashed border-border bg-secondary/70" />
-          </div>
-        </div>
-        <span className="absolute bottom-2.5 right-3 font-mono text-[10px] text-muted-foreground/70">PREVIEW / {product.id.slice(0, 2).toUpperCase()}</span>
+        {(() => {
+          const demo = getPreviewSiteByProductId(product.id);
+          return demo ? <>
+            <img src={demo.image} alt={`${product.title} website preview`} loading="lazy" width={1024} height={768} className="absolute inset-0 size-full object-cover transition-transform duration-500 hover:scale-105" />
+            <div className={`absolute inset-0 bg-gradient-to-t from-background/90 via-background/5 to-background/10 ${demo.kind === "fitness" ? "mix-blend-multiply" : ""}`} />
+            <div className="absolute inset-x-4 top-4 flex items-center justify-between text-[9px] font-semibold uppercase tracking-[0.12em] text-primary-foreground drop-shadow sm:inset-x-5 sm:top-5">
+              <span>{demo.brand}</span><span className="border border-primary-foreground/50 px-2 py-1">LIVE DEMO</span>
+            </div>
+            <div className="absolute bottom-4 left-4 right-4 text-primary-foreground sm:bottom-5 sm:left-5">
+              <p className="text-[9px] uppercase tracking-[0.12em] opacity-80">{demo.eyebrow}</p>
+              <p className="mt-1 font-display text-xl font-semibold leading-tight sm:text-2xl">{demo.headline.replace("\n", " ")}</p>
+            </div>
+          </> : null;
+        })()}
         {getProductPreviewUrl(product.id) && (
           <Button asChild size="sm" variant="secondary" className="absolute bottom-2 left-3 z-10 h-8 rounded-sm px-2.5 text-[11px]">
-            <a
-              href={getProductPreviewUrl(product.id) ?? undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Live Preview: ${product.title} (opens in a new tab)`}
-            >
+            <Link to="/preview/$slug" params={{ slug: getPreviewSiteByProductId(product.id)?.slug ?? "fashion" }} aria-label={`Live Preview: ${product.title}`}>
               <ExternalLink aria-hidden="true" /> Live Preview
-            </a>
+            </Link>
           </Button>
         )}
         {product.isSold && <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/65"><span className="border border-muted-foreground/50 bg-secondary px-5 py-2 font-mono text-lg font-bold tracking-[0.12em] text-muted-foreground">SOLD</span></span>}
