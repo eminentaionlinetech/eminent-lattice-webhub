@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isFinalKorapayStatus, matchesKorapayOrder } from "@/lib/korapay-payment";
+import {
+  isFinalKorapayStatus,
+  matchesKorapayOrder,
+  validateKorapayCheckoutUrl,
+} from "@/lib/korapay-payment";
 
 describe("Korapay payment confirmation", () => {
   const expectedOrder = { reference: "EL-order-001", amount: 200000 };
@@ -42,5 +46,25 @@ describe("Korapay payment confirmation", () => {
     expect(isFinalKorapayStatus("success")).toBe(true);
     expect(isFinalKorapayStatus("failed")).toBe(true);
     expect(isFinalKorapayStatus("processing")).toBe(false);
+  });
+
+  it("accepts secure Korapay checkout addresses, including checkout subdomains", () => {
+    expect(validateKorapayCheckoutUrl("https://checkout.korapay.com/reference/pay")).toBe(
+      "https://checkout.korapay.com/reference/pay",
+    );
+    expect(validateKorapayCheckoutUrl("https://region.checkout.korapay.com/reference/pay")).toBe(
+      "https://region.checkout.korapay.com/reference/pay",
+    );
+  });
+
+  it("rejects insecure, spoofed, credentialed, or non-checkout URLs", () => {
+    expect(validateKorapayCheckoutUrl("http://checkout.korapay.com/reference/pay")).toBeNull();
+    expect(
+      validateKorapayCheckoutUrl("https://checkout.korapay.com.attacker.example/pay"),
+    ).toBeNull();
+    expect(validateKorapayCheckoutUrl("https://notcheckout.korapay.com/pay")).toBeNull();
+    expect(validateKorapayCheckoutUrl("https://user@checkout.korapay.com/pay")).toBeNull();
+    expect(validateKorapayCheckoutUrl("https://checkout.korapay.com:8443/pay")).toBeNull();
+    expect(validateKorapayCheckoutUrl(null)).toBeNull();
   });
 });

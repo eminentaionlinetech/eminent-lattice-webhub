@@ -2,7 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import { isFinalKorapayStatus, matchesKorapayOrder } from "@/lib/korapay-payment";
+import {
+  isFinalKorapayStatus,
+  matchesKorapayOrder,
+  validateKorapayCheckoutUrl,
+} from "@/lib/korapay-payment";
 
 const checkoutInput = z.object({
   productId: z.string().min(1).max(80),
@@ -61,7 +65,10 @@ const korapaySecretNameByProduct = {
 
 export const getMarketplaceCatalog = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.from("marketplace_catalog").select("*").order("product_id");
+  const { data, error } = await supabaseAdmin
+    .from("marketplace_catalog")
+    .select("*")
+    .order("product_id");
 
   if (error || !data) {
     console.error("Marketplace inventory could not be loaded.");
@@ -113,15 +120,26 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
       },
     );
     const reservation = z
-      .object({ status: z.string(), amount_ngn: z.number().optional(), title: z.string().optional() })
+      .object({
+        status: z.string(),
+        amount_ngn: z.number().optional(),
+        title: z.string().optional(),
+      })
       .safeParse(reservationData);
 
     if (reservationError || !reservation.success) {
       console.error("A marketplace order could not be reserved.");
-      return { ok: false as const, message: "This listing could not be reserved. Please try again." };
+      return {
+        ok: false as const,
+        message: "This listing could not be reserved. Please try again.",
+      };
     }
 
-    if (reservation.data.status !== "reserved" || !reservation.data.amount_ngn || !reservation.data.title) {
+    if (
+      reservation.data.status !== "reserved" ||
+      !reservation.data.amount_ngn ||
+      !reservation.data.title
+    ) {
       const message =
         reservation.data.status === "sold"
           ? "This website has already been claimed."
@@ -168,17 +186,29 @@ export const createKorapayCheckout = createServerFn({ method: "POST" })
       ) {
         console.error(`Korapay checkout initialization failed with status ${response.status}.`);
         await releaseReservation(reference);
-        return { ok: false as const, message: "Korapay could not start checkout. Please try again." };
+        return {
+          ok: false as const,
+          message: "Korapay could not start checkout. Please try again.",
+        };
       }
 
-      const checkoutUrl = new URL(payload.data.checkout_url);
-      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.korapay.com") {
-        console.error("Korapay returned an unexpected checkout address.");
+      const checkoutUrl = validateKorapayCheckoutUrl(payload.data.checkout_url);
+      if (!checkoutUrl) {
+        let checkoutHost = "invalid";
+        try {
+          checkoutHost = new URL(payload.data.checkout_url).hostname;
+        } catch {
+          // The URL itself is invalid; never log payment URL query values.
+        }
+        console.error(`Korapay returned an unexpected checkout address on host ${checkoutHost}.`);
         await releaseReservation(reference);
-        return { ok: false as const, message: "Checkout could not be opened safely. Please try again." };
+        return {
+          ok: false as const,
+          message: "Checkout could not be opened safely. Please try again.",
+        };
       }
 
-      return { ok: true as const, checkoutUrl: checkoutUrl.toString(), reference, claimToken };
+      return { ok: true as const, checkoutUrl, reference, claimToken };
     } catch {
       console.error("Korapay checkout request could not be completed.");
       await releaseReservation(reference);
@@ -200,7 +230,10 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (error || !order || !order.claim_token_hash) {
-      return { ok: false as const, message: "We could not confirm this order. Contact the marketplace owner." };
+      return {
+        ok: false as const,
+        message: "We could not confirm this order. Contact the marketplace owner.",
+      };
     }
 
     if (!(await matchesSecret(data.claimToken, order.claim_token_hash))) {
@@ -208,7 +241,10 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
     }
 
     if (order.status !== "pending" && order.status !== "paid") {
-      return { ok: false as const, message: "This order could not be completed. Please contact the marketplace owner." };
+      return {
+        ok: false as const,
+        message: "This order could not be completed. Please contact the marketplace owner.",
+      };
     }
 
     if (order.status !== "paid") {
@@ -223,24 +259,39 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
         } | null;
 
         if (!response.ok || (payload?.status !== true && payload?.status !== "true")) {
-          return { ok: false as const, message: "Your payment is still being confirmed. Please check again shortly." };
+          return {
+            ok: false as const,
+            message: "Your payment is still being confirmed. Please check again shortly.",
+          };
         }
 
         const payment = payload.data;
-        if (!payment || !matchesKorapayOrder(payment, { reference: data.reference, amount: order.amount_ngn })) {
+        if (
+          !payment ||
+          !matchesKorapayOrder(payment, { reference: data.reference, amount: order.amount_ngn })
+        ) {
           console.error("Korapay returned a transaction that did not match its order.");
-          return { ok: false as const, message: "Payment details could not be matched to this order." };
+          return {
+            ok: false as const,
+            message: "Payment details could not be matched to this order.",
+          };
         }
 
         if (!isFinalKorapayStatus(payment.status)) {
-          return { ok: false as const, message: "Your payment is still being confirmed. Please check again shortly." };
+          return {
+            ok: false as const,
+            message: "Your payment is still being confirmed. Please check again shortly.",
+          };
         }
 
-        const { data: finalizedStatus, error: finalizeError } = await supabaseAdmin.rpc("finalize_marketplace_payment", {
-          _reference: data.reference,
-          _amount_ngn: order.amount_ngn,
-          _provider_status: payment.status,
-        });
+        const { data: finalizedStatus, error: finalizeError } = await supabaseAdmin.rpc(
+          "finalize_marketplace_payment",
+          {
+            _reference: data.reference,
+            _amount_ngn: order.amount_ngn,
+            _provider_status: payment.status,
+          },
+        );
 
         if (finalizeError || finalizedStatus !== "paid") {
           console.error("A Korapay transaction could not claim its listing.");
@@ -254,14 +305,21 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
         }
       } catch {
         console.error("Korapay transaction verification could not be completed.");
-        return { ok: false as const, message: "Your payment is still being confirmed. Please check again shortly." };
+        return {
+          ok: false as const,
+          message: "Your payment is still being confirmed. Please check again shortly.",
+        };
       }
     }
 
-    const secretNames = korapaySecretNameByProduct[order.product_id as keyof typeof korapaySecretNameByProduct];
+    const secretNames =
+      korapaySecretNameByProduct[order.product_id as keyof typeof korapaySecretNameByProduct];
     if (!secretNames) {
       console.error("Credential delivery is not configured for the purchased listing.");
-      return { ok: false as const, message: "Your purchase is confirmed; contact the marketplace owner for access." };
+      return {
+        ok: false as const,
+        message: "Your purchase is confirmed; contact the marketplace owner for access.",
+      };
     }
 
     const adminUrl = process.env[secretNames.url];
@@ -270,27 +328,42 @@ export const verifyKorapayPayment = createServerFn({ method: "POST" })
 
     if (!adminUrl || !username || !password) {
       console.error("Credential delivery is not configured for the purchased listing.");
-      return { ok: false as const, message: "Your purchase is confirmed; contact the marketplace owner for access." };
+      return {
+        ok: false as const,
+        message: "Your purchase is confirmed; contact the marketplace owner for access.",
+      };
     }
 
     try {
       const parsedUrl = new URL(adminUrl);
       if (parsedUrl.protocol !== "https:" || !parsedUrl.pathname.includes("/admin")) {
         console.error("Credential delivery is not configured with a secure admin address.");
-        return { ok: false as const, message: "Your purchase is confirmed; contact the marketplace owner for access." };
+        return {
+          ok: false as const,
+          message: "Your purchase is confirmed; contact the marketplace owner for access.",
+        };
       }
     } catch {
       console.error("Credential delivery is not configured with a valid admin address.");
-      return { ok: false as const, message: "Your purchase is confirmed; contact the marketplace owner for access." };
+      return {
+        ok: false as const,
+        message: "Your purchase is confirmed; contact the marketplace owner for access.",
+      };
     }
 
-    const { data: claimed, error: claimError } = await supabaseAdmin.rpc("consume_marketplace_credential_claim", {
-      _reference: data.reference,
-      _claim_token_hash: order.claim_token_hash,
-    });
+    const { data: claimed, error: claimError } = await supabaseAdmin.rpc(
+      "consume_marketplace_credential_claim",
+      {
+        _reference: data.reference,
+        _claim_token_hash: order.claim_token_hash,
+      },
+    );
 
     if (claimError || !claimed) {
-      return { ok: false as const, message: "These credentials have already been retrieved. Keep them safe." };
+      return {
+        ok: false as const,
+        message: "These credentials have already been retrieved. Keep them safe.",
+      };
     }
 
     return {
